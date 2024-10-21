@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affichage du CSV Google Drive</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Affichage des données du CSV</h1>
+<table id="csv-table">
+    <thead>
+        <tr id="csv-header"></tr>
+    </thead>
+    <tbody id="csv-body"></tbody>
+</table>
+
+<script>
+    // URL de l'API Google Apps Script
+    const csvUrl = 'https://script.google.com/macros/s/AKfycbx93VmJfdpA4CzJjLpJ1FJFtAl75ksaFmqndX29_Xjw7Ht34dWJYXJbX7sXLWUDIT3P/exec';
+
+    // Fonction pour afficher le CSV sous forme de tableau HTML
+    function displayCSV(data) {
+        const headerRow = document.getElementById('csv-header');
+        const body = document.getElementById('csv-body');
+
+        // Afficher les en-têtes
+        const headers = data[0];
+        headers.forEach(header => {
+            const th = document.createElement('th');
+            th.textContent = header;
+            headerRow.appendChild(th);
+        });
+
+        // Afficher les lignes de données
+        data.slice(1).forEach(row => {
+            const tr = document.createElement('tr');
+            row.forEach(cell => {
+                const td = document.createElement('td');
+                td.textContent = cell;
+                tr.appendChild(td);
+            });
+            body.appendChild(tr);
+        });
+    }
+
+    // Charger le fichier CSV depuis l'API Google Apps Script avec PapaParse
+    Papa.parse(csvUrl, {
+        download: true,
+        complete: function(results) {
+            displayCSV(results.data);
+        }
+    });
+</script>
+
+</body>
+</html>
