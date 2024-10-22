@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Affichage du CSV Google Drive</title>
+    <title>Affichage CSV Google Drive</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <style>
         table {
@@ -21,7 +21,15 @@
 </head>
 <body>
 
-<h1>Affichage des données du CSV</h1>
+<h1>Afficher les données d'un CSV</h1>
+
+<!-- Boîte de dialogue pour entrer le nom du fichier CSV -->
+<label for="csvFileName">Entrez le nom du fichier CSV :</label>
+<input type="text" id="csvFileName" placeholder="ex: test">
+<button onclick="fetchCSV()">Afficher le fichier CSV</button>
+
+<p id="message"></p>
+
 <table id="csv-table">
     <thead>
         <tr id="csv-header"></tr>
@@ -30,41 +38,70 @@
 </table>
 
 <script>
-    // URL de l'API Google Apps Script
-    const csvUrl = 'https://script.google.com/macros/s/AKfycbx93VmJfdpA4CzJjLpJ1FJFtAl75ksaFmqndX29_Xjw7Ht34dWJYXJbX7sXLWUDIT3P/exec';
+    // URL de l'application Google Apps Script
+    const scriptUrl = 'https://script.google.com/macros/s/AKfycbx93VmJfdpA4CzJjLpJ1FJFtAl75ksaFmqndX29_Xjw7Ht34dWJYXJbX7sXLWUDIT3P/exec';
 
-    // Fonction pour afficher le CSV sous forme de tableau HTML
-    function displayCSV(data) {
-        const headerRow = document.getElementById('csv-header');
-        const body = document.getElementById('csv-body');
+    // Fonction pour chercher et afficher le fichier CSV
+    function fetchCSV() {
+        let fileName = document.getElementById('csvFileName').value;
+        
+        if (!fileName) {
+            document.getElementById('message').textContent = "Veuillez entrer un nom de fichier.";
+            return;
+        }
 
-        // Afficher les en-têtes
-        const headers = data[0];
+        // Ajouter l'extension .csv si elle n'est pas déjà présente
+        if (!fileName.endsWith('.csv')) {
+            fileName += '.csv';
+        }
+
+        const url = `${scriptUrl}?fileName=${fileName}`;
+
+        fetch(url)
+            .then(response => response.text())
+            .then(data => {
+                if (data === 'Fichier non trouvé.') {
+                    document.getElementById('message').textContent = "Fichier non trouvé.";
+                } else if (data === 'Paramètre fileName manquant.') {
+                    document.getElementById('message').textContent = "Veuillez entrer un nom de fichier.";
+                } else {
+                    document.getElementById('message').textContent = "Fichier trouvé et affiché ci-dessous.";
+                    parseCSV(data);
+                }
+            })
+            .catch(error => {
+                document.getElementById('message').textContent = "Erreur lors de la récupération du fichier.";
+                console.error('Erreur:', error);
+            });
+    }
+
+    // Fonction pour afficher le contenu du CSV
+    function parseCSV(data) {
+        const csvData = Papa.parse(data, { header: true }).data;
+
+        // Vider le tableau existant
+        document.getElementById('csv-header').innerHTML = '';
+        document.getElementById('csv-body').innerHTML = '';
+
+        // Générer les en-têtes de colonne
+        const headers = Object.keys(csvData[0]);
         headers.forEach(header => {
             const th = document.createElement('th');
             th.textContent = header;
-            headerRow.appendChild(th);
+            document.getElementById('csv-header').appendChild(th);
         });
 
-        // Afficher les lignes de données
-        data.slice(1).forEach(row => {
+        // Générer les lignes de données
+        csvData.forEach(row => {
             const tr = document.createElement('tr');
-            row.forEach(cell => {
+            headers.forEach(header => {
                 const td = document.createElement('td');
-                td.textContent = cell;
+                td.textContent = row[header];
                 tr.appendChild(td);
             });
-            body.appendChild(tr);
+            document.getElementById('csv-body').appendChild(tr);
         });
     }
-
-    // Charger le fichier CSV depuis l'API Google Apps Script avec PapaParse
-    Papa.parse(csvUrl, {
-        download: true,
-        complete: function(results) {
-            displayCSV(results.data);
-        }
-    });
 </script>
 
 </body>
